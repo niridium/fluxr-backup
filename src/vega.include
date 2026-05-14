@@ -1,0 +1,12 @@
+Backups/
+Games/
+Music/
+Notes/
+Pictures/
+
+my-scripts/
+nix-system/
+nix-shells/
+rust_projects/
+
+.factorio/
