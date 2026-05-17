@@ -8,24 +8,27 @@
       ...
     }:
     {
-      devShells.x86_64-linux = {
-        default =
-          let
-            system = "x86_64-linux";
-            pkgs = import nixpkgs { inherit system; };
-          in
-          with pkgs;
-          mkShell {
-            packages = [
-              git-conventional-commits
-              nil
-              nixd
-              nixfmt-tree
-              pre-commit
-              shellcheck
-              shfmt
-            ];
-          };
-      };
-    };
+    #   devShells.x86_64-linux = {
+    #     default =
+    #       let
+    #         system = "x86_64-linux";
+    #         pkgs = import nixpkgs { inherit system; };
+    #       in
+    #       with pkgs;
+    #       mkShell {
+    #         packages = [
+    #           cachix
+    #           git-conventional-commits
+    #           nil
+    #           nixd
+    #           nixfmt-tree
+    #           pre-commit
+    #           shellcheck
+    #           shfmt
+
+    #           zenity
+    #         ];
+    #       };
+    #   };
+    # };
 }
