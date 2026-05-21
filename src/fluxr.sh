@@ -4,6 +4,7 @@
 cd "$(dirname "$0")" || exit
 
 source fluxr.conf
+source propagation.sh
 
 LOCAL_HOSTNAME=$(hostname)
 
@@ -12,55 +13,66 @@ services_backup() {
         echo -e "\tBacking up $services -->"
         ./"$services".sh
     done
+    echo -e "--- ---\t---"
     unset SERVICES
 }
 
 core_backup() {
-    if [[ "$LOCAL_HOSTNAME" == "$BACKUP_DIR_HOST" ]]; then
+    if [[ "${LOCAL_HOSTNAME}:" == "$BACKUP_DIR_HOST" ]]; then
         echo -e "\tBacking up $ROOT --> $BACKUP_DIR/$hostname/"
-        echo "---"
-        sudo rsync $RSYNC_OPTS --files-from=./"$hostname".include "$ROOT"/ "$BACKUP_DIR"/"$hostname"/
+        rsync $RSYNC_OPTS --files-from=./"$hostname".include "$ROOT"/ "$BACKUP_DIR"/"$hostname"/
+        echo -e "\t---"
     else
         echo -e "\tBacking up $ROOT --> $BACKUP_DIR_HOST$BACKUP_DIR/$hostname/"
-        echo "---"
-        sudo rsync $RSYNC_OPTS --files-from=./"$hostname".include "$ROOT"/ "$BACKUP_DIR_HOST""$BACKUP_DIR"/"$hostname"/
+        rsync $RSYNC_OPTS --files-from=./"$hostname".include "$ROOT"/ "$BACKUP_DIR_HOST""$BACKUP_DIR"/"$hostname"/
+        echo -e "\t---"
     fi
 }
 
 stage_1() {
+
+    if [[ -n $1 ]]; then
+        hostname=$1
+        source "$hostname".conf
+        echo -e "\tSsh as $USER@$hostname >>>"
+        core_backup
+        if [[ -n "$SERVICES" ]]; then
+            services_backup
+        else
+            echo -e "??? \tNo services to backup"
+            echo -e "--- ---\t---"
+        fi
+        exit 0
+    fi
+
     echo "+++ START STAGE 1"
+
     for hostname in "${HOSTNAMES[@]}"; do
         source "$hostname".conf
 
         echo Host: "$hostname" "-->"
 
         if [[ "$LOCAL_HOSTNAME" != "$hostname" ]]; then
-            echo -e "??? \tHost is remote"
+            # echo -e "??? \tHost is remote"
             if [[ -n "$SSH_TTY" ]]; then
-                echo -e "??? \tCan't backup ssh client"
+                echo -e "!!! \tCan't backup ssh client"
                 continue
             else
-                echo "---"
-
-                # To make this work I have to create arguments for the script,
-                # e.g., "./fluxr.sh $hostname", this will skip the for loop
-                # and only run for the current host when the script starts remotely
-                #
-                # ssh root@"$hostname" /storage/fluxr-test/fluxr.sh
-
+                ssh root@"$hostname" /storage/fluxr-test/fluxr.sh "$hostname"
                 continue
             fi
         fi
 
+        core_backup
+
         if [[ -n "$SERVICES" ]]; then
-            echo -e "\tThere are services to backup >>>"
             services_backup
         else
-            echo -e "??? \tThere are no services to backup"
+            echo -e "??? \tNo services to backup"
+            echo -e "--- ---\t---"
         fi
-        core_backup
     done
 }
 
-stage_1
-./propagation.sh
+stage_1 "$1"
+stage_2
