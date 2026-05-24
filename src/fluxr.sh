@@ -3,10 +3,24 @@
 
 cd "$(dirname "$0")" || exit
 
-source fluxr.conf
+CONFIG_DIR=/home/nixy/.config/fluxr
+source $CONFIG_DIR/fluxr.conf
 source propagation.sh
 
 LOCAL_HOSTNAME=$(hostname)
+
+install() {
+    if [[ ! -f $CONFIG_DIR/fluxr.conf ]]; then
+        echo "Installing config files >>>"
+        mkdir -v "$CONFIG_DIR"
+
+        cp -v ./fluxr.conf.example "$CONFIG_DIR"/fluxr.conf
+        echo -e "--- ---\t---"
+    fi
+    # I have to sync the config with the other hosts when it changes
+    # Over ssh directory is created as root owner, I have to change the owner
+    # Need to also copy hosts config between hosts
+}
 
 services_backup() {
     for services in "${SERVICES[@]}"; do
@@ -20,11 +34,11 @@ services_backup() {
 core_backup() {
     if [[ "${LOCAL_HOSTNAME}:" == "$BACKUP_DIR_HOST" ]]; then
         echo -e "\tBacking up $ROOT --> $BACKUP_DIR/$hostname/"
-        rsync $RSYNC_OPTS --files-from=./"$hostname".include "$ROOT"/ "$BACKUP_DIR"/"$hostname"/
+        rsync $RSYNC_OPTS --files-from=$CONFIG_DIR/hosts/"$hostname".include "$ROOT"/ "$BACKUP_DIR"/"$hostname"/
         echo -e "\t---"
     else
         echo -e "\tBacking up $ROOT --> $BACKUP_DIR_HOST$BACKUP_DIR/$hostname/"
-        rsync $RSYNC_OPTS --files-from=./"$hostname".include "$ROOT"/ "$BACKUP_DIR_HOST""$BACKUP_DIR"/"$hostname"/
+        rsync $RSYNC_OPTS --files-from=$CONFIG_DIR/hosts/"$hostname".include "$ROOT"/ "$BACKUP_DIR_HOST""$BACKUP_DIR"/"$hostname"/
         echo -e "\t---"
     fi
 }
@@ -33,7 +47,7 @@ stage_1() {
 
     if [[ -n $1 ]]; then
         hostname=$1
-        source "$hostname".conf
+        source $CONFIG_DIR/hosts/"$hostname".conf
         echo -e "\tSsh as $USER@$hostname >>>"
         core_backup
         if [[ -n "$SERVICES" ]]; then
@@ -48,7 +62,7 @@ stage_1() {
     echo "+++ START STAGE 1"
 
     for hostname in "${HOSTNAMES[@]}"; do
-        source "$hostname".conf
+        source $CONFIG_DIR/hosts/"$hostname".conf
 
         echo Host: "$hostname" "-->"
 
@@ -58,7 +72,7 @@ stage_1() {
                 echo -e "!!! \tCan't backup ssh client"
                 continue
             else
-                ssh root@"$hostname" /storage/fluxr-test/fluxr.sh "$hostname"
+                ssh root@"$hostname" /home/nixy/fluxr-backup/src/fluxr.sh "$hostname"
                 continue
             fi
         fi
@@ -73,6 +87,7 @@ stage_1() {
         fi
     done
 }
+install
 
 stage_1 "$1"
 stage_2
