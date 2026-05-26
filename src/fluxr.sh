@@ -5,7 +5,7 @@ cd "$(dirname "$0")" || exit
 
 CONFIG_DIR=/home/nixy/.config/fluxr
 source $CONFIG_DIR/fluxr.conf
-source propagation.sh
+source modules/propagation
 
 LOCAL_HOSTNAME=$(hostname)
 
@@ -25,7 +25,7 @@ install() {
 services_backup() {
     for services in "${SERVICES[@]}"; do
         echo -e "\tBacking up $services -->"
-        ./"$services".sh
+        ./integrations/"$services"
     done
     echo -e "--- ---\t---"
     unset SERVICES
@@ -91,3 +91,8 @@ install
 
 stage_1 "$1"
 stage_2
+
+### Right now config is independent from the package and is my job to sync it
+# Built package works, so now I have to wrap the full script as a command and push the package to github
+# Then everytime I change something and push I only have to rebuild in any remote host
+# Next I will find the way to automate config so it syncs between hosts in a single directory without hard coded paths
