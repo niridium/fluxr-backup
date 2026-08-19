@@ -1,4 +1,6 @@
 result
+fluxr.conf.stage
+modules
 
 # Devenv
 .devenv*
