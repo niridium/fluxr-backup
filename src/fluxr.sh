@@ -1,96 +1,90 @@
 #!/usr/bin/env bash
-# shellcheck source-path=SCRIPTDIR
 
 cd "$(dirname "$0")" || exit
 
-RSYNC_OPTS="--info=progress2,stats1 --archive --recursive --acls --xattrs --hard-links --human-readable --compress --delete"
-LOCAL_HOSTNAME=$(hostname)
 CONFIG_DIR="$HOME"/.config/fluxr
 
-# Parse hosts to backup based on config file names, files starting with underscore are ignored
-HOSTNAMES="$(find $CONFIG_DIR -name "*.sh" | sed "s|${CONFIG_DIR}/||;s|.sh||" | sed "/_/d" | sed "N;s|\n| |")"
-
-source ./integrations/postgres.sh
-
-services_backup() {
-    if [[ -n "$SERVICES" ]]; then
-        for service in "${SERVICES[@]}"; do
-            echo -e "\tBacking up $service -->"
-            # ./integrations/"$services"
-            "$service"_bkp
-        done
-        echo -e "--- ---\t---"
-        unset SERVICES
-    else
-        echo -e "??? \tNo services to backup"
-        echo -e "--- ---\t---"
-    fi
-}
-
 config_setup() {
-    source $CONFIG_DIR/"$hostname".sh
-    # Parse host and directory targets from config
-    backup_dir_mline=$(echo "$TARGET" | sed 's/:/\n/' -)
-    BACKUP_HOST=$(echo "$backup_dir_mline" | sed -n '1p' -)
-    BACKUP_DIR=$(echo "$backup_dir_mline" | sed -n '2p' -)
-    export BACKUP_DIR
-    # echo $BACKUP_DIR
-
-    # Redirect directories to backup from $ROOT to file
     mkdir --parents "$HOME"/.local/share/fluxr
+
+    INCLUDE_FILE="$HOME"/.local/share/fluxr/"$hostname".include
+    export INCLUDE_FILE
+
+    source "$CONFIG_DIR"/"$hostname".sh
+
+    # WIP: Some target syntax checks
+    # if echo "$TARGET" | grep -q ':'; then
+    #     echo This is remote
+    # elif [[ $TARGET == \/* || $TARGET == ~\/* ]]; then
+    #     echo Target is available
+    # else
+    #     echo Target is not available
+    #     exit 1
+    # fi
+
     echo "$INCLUDE" >"$HOME"/.local/share/fluxr/"$hostname".include
+
+    echo "$COMMAND" >"$HOME"/.local/share/fluxr/"$hostname"-command.sh
+    chmod +x "$HOME"/.local/share/fluxr/"$hostname"-command.sh
 }
 core_backup() {
-    if [[ "$LOCAL_HOSTNAME" == "$BACKUP_HOST" ]]; then
-        echo -e "\tBacking up $ROOT --> $BACKUP_DIR"
-        rsync $RSYNC_OPTS --files-from="$HOME"/.local/share/fluxr/"$hostname".include "$ROOT"/ "$BACKUP_DIR"/
+    echo -e "\tBacking up $ROOT --> $TARGET"
+    if [[ -n "$COMMAND" ]]; then
+        "$HOME"/.local/share/fluxr/"$hostname"-command.sh
         echo -e "\t---"
     else
-        echo -e "\tBacking up $ROOT --> $BACKUP_HOST:$BACKUP_DIR"
-        rsync $RSYNC_OPTS --files-from="$HOME"/.local/share/fluxr/"$hostname".include "$ROOT"/ "$BACKUP_HOST":"$BACKUP_DIR"/
+        rclone sync --progress --links --include-from "$INCLUDE_FILE" "$ROOT" "$TARGET"
         echo -e "\t---"
     fi
 }
-
-stage_1() {
-
+remote_backup() {
     # When fluxr is called over ssh this if statement will execute, close connection and continue the for loop
     if [[ -n $1 ]]; then
         hostname=$1
 
         echo -e "\tSsh as $USER@$hostname >>>"
-
         config_setup
-
         core_backup
-
-        services_backup
 
         exit 0
     fi
+}
+stage_1() {
+    remote_backup "$1" # Exit script when finish execution
+
+    LOCAL_HOSTNAME=$(hostname)
+    # Parse hosts and remotes to backup based on config file names, files starting with underscore are ignored
+    HOSTNAMES="$(find "$CONFIG_DIR" -maxdepth 1 -name "*.sh" | sed "s|${CONFIG_DIR}/||;s|.sh||" | sed "/_/d" | sed "N;s|\n| |")"
 
     echo "+++ START STAGE 1"
 
     for hostname in ${HOSTNAMES}; do
         echo Host: "$hostname" "-->"
-
         # Execute command over ssh when host is remote
         if [[ "$LOCAL_HOSTNAME" != "$hostname" ]]; then
             if [[ -n "$SSH_TTY" ]]; then
                 echo -e "!!! \tCan't backup ssh client"
                 continue
             else
-                ssh root@"$hostname" nix run gitlab:niridium/fluxr-backup/feat/configuration -- "$hostname"
+                sudo rsync "$HOME"/.config/fluxr/"$hostname".sh "$hostname":/root/.config/fluxr/"$hostname".sh --quiet
+                ssh root@"$hostname" nix run gitlab:niridium/fluxr-backup/rclone -- "$hostname"
                 continue
             fi
         fi
 
         config_setup
-
         core_backup
-
-        services_backup
     done
 }
-
+rclone_sync() {
+    REMOTES="$(find "$CONFIG_DIR"/remotes -name "*.sh" | sed "s|${CONFIG_DIR}/remotes/||;s|.sh||" | sed "/_/d" | sed "N;s|\n| |")"
+    for remote in ${REMOTES}; do
+        source "$CONFIG_DIR"/remotes/"$remote".sh
+        for _target in "${SYNC[@]}"; do
+            echo "Transfering $remote: to $_target -->"
+            rclone sync --progress --links --checkers 16 --transfers 8 --stats 1s --stats-file-name-length 80 --fast-list "$remote": "$_target"
+        done
+    done
+}
 stage_1 "$1"
+rclone_sync

@@ -1,6 +1,7 @@
 {
   stdenv,
   makeWrapper,
+  rclone,
   rsync,
   openssh,
   coreutils,
@@ -10,7 +11,7 @@ stdenv.mkDerivation {
   pname = "fluxr";
   version = "0.1.0";
   src = ./src;
-  buildInputs = [rsync openssh coreutils];
+  buildInputs = [rclone rsync openssh coreutils];
   nativeBuildInputs = [makeWrapper];
   installPhase = ''
     mkdir -p $out/bin
