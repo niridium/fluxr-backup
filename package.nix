@@ -15,13 +15,10 @@ stdenv.mkDerivation {
   nativeBuildInputs = [makeWrapper];
   installPhase = ''
     mkdir -p $out/bin
-    mkdir -p $out/bin/integrations
 
     install $src/fluxr.sh $out/bin/fluxr
     wrapProgram $out/bin/fluxr \
     --prefix PATH $out/bin
-
-    install $src/integrations/postgres.sh $out/bin/integrations/postgres.sh
   '';
 
   meta = {
