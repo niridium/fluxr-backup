@@ -67,7 +67,7 @@ stage_1() {
                 continue
             else
                 sudo rsync "$HOME"/.config/fluxr/"$hostname".sh "$hostname":/root/.config/fluxr/"$hostname".sh --quiet
-                ssh root@"$hostname" nix run gitlab:niridium/fluxr-backup/rclone -- "$hostname"
+                ssh root@"$hostname" nix run gitlab:niridium/fluxr-backup -- "$hostname"
                 continue
             fi
         fi
