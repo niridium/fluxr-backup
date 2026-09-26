@@ -16,7 +16,7 @@ Add to your flake inputs and system packages:
 `configuration.nix`
 
 ```nix
-{
+{inputs, ...}: {
   environment.systemPackages = [
     inputs.fluxr.packages.${stdenv.hostPlatform.system}.default
   ]
