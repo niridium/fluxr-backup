@@ -10,7 +10,14 @@ config_setup() {
     INCLUDE_FILE="$HOME"/.local/share/fluxr/"$hostname".include
     export INCLUDE_FILE
 
+    # shellcheck source=/dev/null
     source "$CONFIG_DIR"/"$hostname".sh
+
+    # ROOT and TARGET are only required when no custom COMMAND overrides the sync
+    if [[ -z "$COMMAND" && (-z "$ROOT" || -z "$TARGET") ]]; then
+        echo "!!! Error: config for host $hostname is missing ROOT and/or TARGET"
+        exit 1
+    fi
 
     # WIP: Some target syntax checks
     # if echo "$TARGET" | grep -q ':'; then
@@ -56,6 +63,12 @@ stage_1() {
     # Parse hosts and remotes to backup based on config file names, files starting with underscore are ignored
     HOSTNAMES="$(find "$CONFIG_DIR" -maxdepth 1 -name "*.sh" | sed "s|${CONFIG_DIR}/||;s|.sh||" | sed "/_/d" | sed "N;s|\n| |")"
 
+    # Fail fast if there are no host config files to process
+    if [[ -z "$HOSTNAMES" ]]; then
+        echo "!!! Error: no config files found in $CONFIG_DIR"
+        exit 1
+    fi
+
     echo "+++ START STAGE 1"
 
     for hostname in ${HOSTNAMES}; do
@@ -79,6 +92,7 @@ stage_1() {
 rclone_sync() {
     REMOTES="$(find "$CONFIG_DIR"/remotes -name "*.sh" | sed "s|${CONFIG_DIR}/remotes/||;s|.sh||" | sed "/_/d" | sed "N;s|\n| |")"
     for remote in ${REMOTES}; do
+        # shellcheck source=/dev/null
         source "$CONFIG_DIR"/remotes/"$remote".sh
         for _target in "${SYNC[@]}"; do
             echo "Transfering $remote: to $_target -->"
