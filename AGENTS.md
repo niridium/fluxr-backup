@@ -14,6 +14,11 @@ task is ambiguous.
 - **Respect scope.** Do not commit, push, or run destructive commands unless the
   task explicitly asks. If a change is made, keep it isolated and reversible (the
   repo is under git — a hard reset undoes uncommitted edits).
+- **Stay inside the working directory.** Do not modify files outside the current
+  project directory (e.g. the user's home/config dirs, dotfiles) without explicit
+  permission. Prefer a throwaway scratch directory for tests. If an out-of-tree
+  file is already modified by an earlier action, do not overwrite it further; say
+  so and let the user decide how to recover it.
 - **Give a rationale.** When proposing a fix, say why before implementing, and
   note the tradeoffs / edge cases.
 - **Show the commit message before committing.** Present the message for
