@@ -1,22 +1,15 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
-  outputs = {
-    self,
-    nixpkgs,
-    ...
-  }: let
+  outputs = {nixpkgs, ...}: let
     system = "x86_64-linux";
     pkgs = import nixpkgs {inherit system;};
+    fluxrPkg = pkgs.callPackage ./nix/package.nix {};
   in {
-    packages.${system}.default = pkgs.callPackage ./nix/package.nix {};
-    homeModules.default = {
-      pkgs,
-      lib,
-      ...
-    }: {
+    packages.${system}.default = fluxrPkg;
+    homeModules.default = {lib, ...}: {
       imports = [./nix/homeModule.nix];
-      programs.fluxr.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+      programs.fluxr.package = lib.mkDefault fluxrPkg;
     };
   };
 }
