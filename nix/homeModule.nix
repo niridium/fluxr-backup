@@ -4,6 +4,7 @@
   ...
 }: let
   cfg = config.programs.fluxr;
+  configFiles = builtins.listToAttrs (map (file: lib.nameValuePair "xdg.configFile.fluxr/${file}.source" "${file}") cfg.settings);
 in {
   options.programs.fluxr = {
     enable = lib.mkEnableOption "fluxr, a backup system";
@@ -13,10 +14,8 @@ in {
       default = [];
     };
   };
-  config = let
-    configFiles = builtins.listToAttrs (map (file: lib.nameValuePair "xdg.configFile.fluxr/${file}.source" "${file}") cfg.settings);
-  in
-    lib.mkIf cfg {
-    }
+  config =
+    lib.mkIf cfg.enable
+    {home.packages = [cfg.package];}
     // configFiles;
 }
