@@ -10,7 +10,7 @@
 stdenv.mkDerivation {
   pname = "fluxr";
   version = "0.1.0";
-  src = ./src;
+  src = ../src;
   buildInputs = [rclone rsync openssh coreutils];
   nativeBuildInputs = [makeWrapper];
   installPhase = ''
