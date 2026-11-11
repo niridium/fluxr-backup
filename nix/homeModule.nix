@@ -14,7 +14,7 @@ in {
     };
   };
   config = let
-    configFiles = builtins.listToAttrs map (file: lib.nameValuePair "xdg.configFile.fluxr/${file}.source" "${file}") cfg.settings;
+    configFiles = builtins.listToAttrs (map (file: lib.nameValuePair "xdg.configFile.fluxr/${file}.source" "${file}") cfg.settings);
   in
     lib.mkIf cfg {
     }
