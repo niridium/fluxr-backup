@@ -39,13 +39,23 @@ sync() {
         echo -e "\t---"
     fi
 }
-# ssh-sync() {
-#
-#     config-setup
-#     sync
-#
-#     exit 0
-# }
+check-ssh() {
+    if [[ "$LOCAL_HOSTNAME" != "$hostname" ]]; then
+        if [[ -n "$SSH_TTY" ]]; then
+            echo -e "!!! \tCan't backup ssh client"
+            return 1
+        else
+            sudo rsync -v "$HOME"/.config/fluxr/"$hostname".sh "$hostname":/root/.config/fluxr/"$hostname".sh --quiet
+            if (which fluxr >/dev/null); then
+                echo -e "\tSsh as root@$hostname >>>"
+                ssh root@"$hostname" fluxr host-sync "$hostname"
+            else
+                echo "fluxr not found at host ${hostname}"
+            fi
+            return 10
+        fi
+    fi
+}
 host-sync() {
     LOCAL_HOSTNAME=$(hostname)
     # Parse hosts and remotes to backup based on config file names, files starting with underscore are ignored
@@ -60,38 +70,34 @@ host-sync() {
     echo "+++ START STAGE 1"
 
     for hostname in ${HOSTNAMES}; do
-        # Execute command over ssh when host is remote
-        if [[ "$LOCAL_HOSTNAME" != "$hostname" ]]; then
-            if [[ -n "$SSH_TTY" ]]; then
-                echo -e "!!! \tCan't backup ssh client"
-                continue
-            else
-                sudo rsync "$HOME"/.config/fluxr/"$hostname".sh "$hostname":/root/.config/fluxr/"$hostname".sh --quiet
-                if (which fluxr >/dev/null); then
-                    echo -e "\tSsh as root@$2 >>>"
-                    ssh root@"$hostname" fluxr host-sync "$hostname"
-                else
-                    echo "fluxr not found at host ${hostname}"
-                fi
-                continue
-            fi
-        fi
         case $2 in
-        "$hostname")
-            echo Host: "$hostname" "-->"
-            config-setup
-            sync "$@"
-            break
+        -a | "$hostname")
+            check-ssh "$@"
+            # If ssh sync returns 10 or 1, it exited successfully or with error,
+            # on both cases local sync is not needed.
+            if [[ $? != 10 && $? != 1 ]]; then
+                echo Host: "$hostname" "-->"
+                config-setup
+                sync "$@"
+            fi
+            # Loop must continue to sync all hosts
+            if [[ $2 != -a ]]; then
+                break
+            fi
             ;;
-        -a)
-            echo Host: "$hostname" "-->"
-            config-setup
-            sync "$@"
-            ;;
+        # -a)
+        #     check-ssh "$@"
+        #     if [[ $? != 10 && $? != 1 ]]; then
+        #         echo Host: "$hostname" "-->"
+        #     # config-setup
+        #     # sync "$@"
+        #     fi
+        #     ;;
         *)
             continue
             ;;
         esac
+
     done
 }
 remote-sync() {
@@ -112,14 +118,11 @@ remote-sync() {
     done
 }
 help() {
-    cat ./docs/help.txt
+    cat ../docs/help.txt
 }
 case $1 in
 host-sync)
     host-sync "$@"
-    ;;
-ssh-sync)
-    ssh-sync "$@"
     ;;
 remote-sync)
     remote-sync "$@"
