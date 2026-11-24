@@ -39,14 +39,13 @@ sync() {
         echo -e "\t---"
     fi
 }
-ssh-sync() {
-
-    echo -e "\tSsh as $USER@$2 >>>"
-    config-setup
-    sync
-
-    exit 0
-}
+# ssh-sync() {
+#
+#     config-setup
+#     sync
+#
+#     exit 0
+# }
 host-sync() {
     LOCAL_HOSTNAME=$(hostname)
     # Parse hosts and remotes to backup based on config file names, files starting with underscore are ignored
@@ -69,7 +68,8 @@ host-sync() {
             else
                 sudo rsync "$HOME"/.config/fluxr/"$hostname".sh "$hostname":/root/.config/fluxr/"$hostname".sh --quiet
                 if (which fluxr >/dev/null); then
-                    ssh root@"$hostname" fluxr ssh-sync "$hostname"
+                    echo -e "\tSsh as root@$2 >>>"
+                    ssh root@"$hostname" fluxr host-sync "$hostname"
                 else
                     echo "fluxr not found at host ${hostname}"
                 fi
@@ -112,7 +112,7 @@ remote-sync() {
     done
 }
 help() {
-    echo "Help"
+    cat ./docs/help.txt
 }
 case $1 in
 host-sync)
@@ -124,7 +124,7 @@ ssh-sync)
 remote-sync)
     remote-sync "$@"
     ;;
-*)
+help | *)
     help
     ;;
 esac
