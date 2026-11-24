@@ -16,7 +16,8 @@ stdenv.mkDerivation {
   installPhase = ''
     mkdir -p $out/bin
 
-    install $src/fluxr.sh $out/bin/fluxr
+    install $src/docs/help.txt $out/docs/help.txt
+    install $src/bin/fluxr.sh $out/bin/fluxr
     wrapProgram $out/bin/fluxr \
     --prefix PATH $out/bin
   '';
