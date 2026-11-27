@@ -47,7 +47,7 @@ check-ssh() {
         else
             sudo rsync -v "$HOME"/.config/fluxr/"$hostname".sh "$hostname":/root/.config/fluxr/"$hostname".sh --quiet
             if (which fluxr >/dev/null); then
-                echo -e "\tSsh as root@$hostname >>>"
+                echo -e "Ssh as root@$hostname >>>"
                 ssh root@"$hostname" fluxr host-sync "$hostname"
             else
                 echo "fluxr not found at host ${hostname}"
@@ -58,16 +58,8 @@ check-ssh() {
 }
 host-sync() {
     LOCAL_HOSTNAME=$(hostname)
-    # Parse hosts and remotes to backup based on config file names, files starting with underscore are ignored
+    # Parse hosts to backup based on config file names, files starting with underscore are ignored
     HOSTNAMES="$(find "$CONFIG_DIR" -maxdepth 1 -name "*.sh" | sed "s|${CONFIG_DIR}/||;s|.sh||" | sed "/_/d" | sed "N;s|\n| |")"
-
-    # Fail fast if there are no host config files to process
-    # if [[ -z "$HOSTNAMES" ]]; then
-    #     echo "!!! Error: no config files found in $CONFIG_DIR"
-    #     exit 1
-    # fi
-
-    echo "+++ START STAGE 1"
 
     for hostname in ${HOSTNAMES}; do
         case $2 in
@@ -85,14 +77,6 @@ host-sync() {
                 break
             fi
             ;;
-        # -a)
-        #     check-ssh "$@"
-        #     if [[ $? != 10 && $? != 1 ]]; then
-        #         echo Host: "$hostname" "-->"
-        #     # config-setup
-        #     # sync "$@"
-        #     fi
-        #     ;;
         *)
             continue
             ;;
