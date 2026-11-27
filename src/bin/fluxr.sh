@@ -87,9 +87,13 @@ host-sync() {
 remote-sync() {
     REMOTES="$(find "$CONFIG_DIR"/remotes -name "*.sh" | sed "s|${CONFIG_DIR}/remotes/||;s|.sh||" | sed "/_/d" | sed "N;s|\n| |")"
     case $3 in
-    *[a-z]*)
+    ./* | /*)
+        echo -e "\tBacking up $2 --> $3"
         rclone sync --progress --links "$2" "$3"
         exit
+        ;;
+    *)
+        echo "Invalid arguments"
         ;;
     esac
     for remote in ${REMOTES}; do
