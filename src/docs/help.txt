@@ -1,7 +1,6 @@
 USAGE: fluxr <help|SUBCOMMAND> [OPTION]
 
 SUBCOMMANDS:
-<<<<<<< HEAD
     host-sync [OPTION]
         <HOSTNAME> Run sync only for this host
         -a         Sync all configured hosts
@@ -12,14 +11,3 @@ SUBCOMMANDS:
 
     help
         Show this help text
-=======
-    host-sync [OPTION]:
-        <HOSTNAME> Run sync only for this host
-        -a         Sync all configured hosts
-
-    ssh-sync
-
-    remote-sync
-
-    help
->>>>>>> 84b82cc (WIP docs: add help)
