@@ -1,0 +1,25 @@
+USAGE: fluxr <help|SUBCOMMAND> [OPTION]
+
+SUBCOMMANDS:
+<<<<<<< HEAD
+    host-sync [OPTION]
+        <HOSTNAME> Run sync only for this host
+        -a         Sync all configured hosts
+
+    remote-sync [SOURCE] [TARGET]
+        Without arguments it will sync all configured remotes.
+        SOURCE and TARGET syntax must be rclone compatible. See (https://rclone.org/docs/#syntax-of-remote-paths)
+
+    help
+        Show this help text
+=======
+    host-sync [OPTION]:
+        <HOSTNAME> Run sync only for this host
+        -a         Sync all configured hosts
+
+    ssh-sync
+
+    remote-sync
+
+    help
+>>>>>>> 84b82cc (WIP docs: add help)

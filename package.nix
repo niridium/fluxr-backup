@@ -15,6 +15,7 @@ stdenv.mkDerivation {
   nativeBuildInputs = [makeWrapper];
   installPhase = ''
     mkdir -p $out/bin
+    mkdir -p $out/docs
 
     install $src/docs/help.txt $out/docs/help.txt
     install $src/bin/fluxr.sh $out/bin/fluxr
